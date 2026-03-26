@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buku Tamu Digital | PT IHI Power Service Indonesia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ff: 'Plus Jakarta Sans', sans-serif;
+      --fd: 'Barlow Condensed', sans-serif;
+      --g-bg: #EFF3F8; --g-card: #FFFFFF; --g-acc: #E85D26; --g-acc2: #C44D1C;
+      --g-navy: #0E1F40; --g-text: #1A2840; --g-muted: #64748B;
+      --g-border: #E2E8F0; --g-inp: #F8FAFC; --g-ok: #059669;
+      --a-bg: #090E1C; --a-s1: #101828; --a-s2: #1A2540; --a-s3: #243050;
+      --a-acc: #F97316; --a-blue: #3B82F6; --a-text: #F1F5F9;
+      --a-muted: #8090AA; --a-border: #1E2D45; --a-ok: #10B981; --a-err: #EF4444;
+    }
+    body { font-family: var(--ff); background: var(--g-bg); color: var(--g-text);
+      min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    body.adm { background: var(--a-bg); color: var(--a-text); }
+    button { font-family: var(--ff); cursor: pointer; }
+    code { font-family: monospace; }
+
+    /* ── SHARED BUTTONS ── */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      padding:12px 24px; border-radius:10px; font-size:14px; font-weight:600;
+      cursor:pointer; border:none; transition:all .2s; text-decoration:none; }
+    .btn-pri  { background:var(--g-acc); color:#fff; }
+    .btn-pri:hover:not(:disabled) { background:var(--g-acc2); transform:translateY(-1px); }
+    .btn-pri:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-sec  { background:transparent; border:1.5px solid var(--g-border); color:var(--g-muted); }
+    .btn-sec:hover { border-color:var(--g-acc); color:var(--g-acc); }
+    .btn-adm  { background:var(--a-acc); color:#fff; width:100%; padding:13px; border:none; border-radius:10px; font-size:14px; font-weight:600; }
+    .btn-adm:hover:not(:disabled) { background:#EA6C0A; }
+    .btn-adm:disabled { opacity:.6; cursor:not-allowed; }
+
+    /* ── GUEST HEADER ── */
+    .g-hdr { background:var(--g-navy); padding:18px 0; }
+    .g-hdr-in { max-width:880px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:14px; }
+    .logo-box { width:46px; height:46px; background:var(--g-acc); border-radius:11px;
+      display:flex; align-items:center; justify-content:center;
+      font-family:var(--fd); font-size:17px; font-weight:700; color:#fff; letter-spacing:.5px; flex-shrink:0; }
+    .logo-txt-main { font-family:var(--fd); font-size:19px; font-weight:700; color:#fff; letter-spacing:.3px; line-height:1.1; }
+    .logo-txt-sub { font-size:11px; color:rgba(255,255,255,.45); letter-spacing:.5px; margin-top:1px; }
+    .hdr-adm-link { margin-left:auto; font-size:12px; color:rgba(255,255,255,.4);
+      padding:5px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.1);
+      cursor:pointer; transition:all .2s; }
+    .hdr-adm-link:hover { color:#fff; border-color:rgba(255,255,255,.3); }
+
+    /* ── GUEST HERO ── */
+    .g-hero { background:var(--g-navy); padding:28px 0 52px; position:relative; overflow:hidden; }
+    .g-hero::after { content:''; position:absolute; bottom:0; left:0; right:0;
+      height:36px; background:var(--g-bg); border-radius:36px 36px 0 0; }
+    .g-hero-in { max-width:880px; margin:0 auto; padding:0 24px; }
+    .hero-date { font-size:11px; color:rgba(255,255,255,.4); letter-spacing:1.2px; text-transform:uppercase; margin-bottom:6px; }
+    .hero-title { font-family:var(--fd); font-size:38px; font-weight:700; color:#fff; letter-spacing:.5px; line-height:1.05; }
+    .hero-bar { width:36px; height:3px; background:var(--g-acc); border-radius:2px; margin:10px 0 8px; }
+    .hero-sub { font-size:13px; color:rgba(255,255,255,.5); }
+
+    /* ── FORM ── */
+    .form-wrap { max-width:880px; margin:0 auto; padding:20px 24px 40px; }
+    .form-card { background:var(--g-card); border-radius:18px; border:1px solid var(--g-border);
+      padding:32px; box-shadow:0 2px 8px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05); }
+    .sec-ttl { font-size:10px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase;
+      color:var(--g-acc); margin-bottom:14px; padding-bottom:9px; border-bottom:1.5px solid var(--g-border); }
+    .f-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .f-grid-1 { display:grid; grid-template-columns:1fr; gap:14px; margin-bottom:14px; }
+    .f-grp { display:flex; flex-direction:column; gap:5px; }
+    .f-lbl { font-size:12px; font-weight:600; color:var(--g-text); }
+    .f-lbl .req { color:var(--g-acc); margin-left:2px; }
+    .f-inp { padding:10px 13px; border:1.5px solid var(--g-border); border-radius:9px;
+      font-family:var(--ff); font-size:14px; color:var(--g-text); background:var(--g-inp);
+      transition:all .2s; outline:none; width:100%; }
+    .f-inp:focus { border-color:var(--g-acc); background:#fff; box-shadow:0 0 0 3px rgba(232,93,38,.08); }
+    .f-inp::placeholder { color:#C9D4E0; }
+    .f-inp.err { border-color:#f87171; }
+    select.f-inp { cursor:pointer; }
+    textarea.f-inp { resize:vertical; min-height:86px; line-height:1.5; }
+    .f-err { font-size:11px; color:var(--g-acc); margin-top:1px; }
+    .f-divider { height:1px; background:var(--g-border); margin:22px 0; }
+    .f-footer { display:flex; align-items:center; justify-content:space-between; padding-top:6px; }
+    .f-note { font-size:12px; color:var(--g-muted); }
+
+    /* ── SUCCESS ── */
+    .suc-wrap { max-width:580px; margin:0 auto; padding:40px 24px; text-align:center; }
+    .suc-icon { width:68px; height:68px; background:linear-gradient(135deg,var(--g-ok),#34D399);
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      margin:0 auto 18px; font-size:28px; color:#fff; font-weight:700; }
+    .suc-title { font-family:var(--fd); font-size:30px; font-weight:700; color:var(--g-navy); margin-bottom:6px; }
+    .suc-sub { font-size:14px; color:var(--g-muted); margin-bottom:28px; }
+    .badge-card { background:var(--g-card); border:1px solid var(--g-border); border-radius:18px;
+      padding:26px; margin-bottom:18px; box-shadow:0 8px 24px rgba(0,0,0,.06);
+      position:relative; overflow:hidden; }
+    .badge-card::before { content:''; position:absolute; top:0; left:0; right:0;
+      height:4px; background:linear-gradient(90deg,var(--g-acc),#F97316); }
+    .badge-id { font-family:var(--fd); font-size:40px; font-weight:700; color:var(--g-acc); letter-spacing:2px; line-height:1; }
+    .badge-lbl { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--g-muted); margin-bottom:18px; }
+    #qr-wrap { display:flex; justify-content:center; padding:14px;
+      background:#fff; border-radius:10px; border:1px solid var(--g-border); margin:0 0 16px; }
+    .badge-info { display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left; }
+    .b-fld-lbl { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--g-muted); font-weight:600; }
+    .b-fld-val { font-size:13px; font-weight:600; color:var(--g-text); margin-top:2px; }
+    .suc-btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+    /* ── ADMIN LOGIN ── */
+    .adm-login-pg { min-height:100vh; background:var(--a-bg); display:flex; flex-direction:column; }
+    .adm-login-hdr { padding:16px 28px; border-bottom:1px solid var(--a-border);
+      display:flex; align-items:center; gap:12px; }
+    .adm-logo-box { width:34px; height:34px; background:var(--a-acc); border-radius:7px;
+      display:flex; align-items:center; justify-content:center;
+      font-family:var(--fd); font-size:13px; font-weight:700; color:#fff; }
+    .adm-login-body { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 24px; }
+    .adm-login-card { background:var(--a-s1); border:1px solid var(--a-border); border-radius:18px;
+      padding:36px; width:100%; max-width:400px; }
+    .adm-login-title { font-family:var(--fd); font-size:27px; font-weight:700; color:var(--a-text); margin-bottom:5px; }
+    .adm-login-sub { font-size:13px; color:var(--a-muted); margin-bottom:28px; }
+    .adm-fgrp { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+    .adm-lbl { font-size:11px; font-weight:600; color:var(--a-muted); letter-spacing:.5px; text-transform:uppercase; }
+    .adm-inp { padding:11px 13px; background:var(--a-s2); border:1.5px solid var(--a-border);
+      border-radius:9px; font-family:var(--ff); font-size:14px; color:var(--a-text);
+      outline:none; transition:all .2s; width:100%; }
+    .adm-inp:focus { border-color:var(--a-acc); box-shadow:0 0 0 3px rgba(249,115,22,.12); }
+    .adm-inp::placeholder { color:var(--a-muted); opacity:.5; }
+    .g-btn { width:100%; padding:12px; background:var(--a-s2); border:1.5px solid var(--a-border);
+      border-radius:9px; color:var(--a-text); font-family:var(--ff); font-size:13px;
+      font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      gap:9px; transition:all .2s; margin-top:10px; }
+    .g-btn:hover { border-color:var(--a-blue); background:rgba(59,130,246,.07); }
+    .adm-div { display:flex; align-items:center; gap:10px; margin:18px 0; }
+    .adm-div::before,.adm-div::after { content:''; flex:1; height:1px; background:var(--a-border); }
+    .adm-div span { font-size:11px; color:var(--a-muted); }
+    .adm-err { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3);
+      border-radius:8px; padding:9px 12px; font-size:13px; color:#FCA5A5; margin-bottom:14px; }
+    .demo-box { margin-top:22px; padding:12px 14px; background:var(--a-s2);
+      border-radius:9px; border:1px solid var(--a-border); }
+    .demo-ttl { font-size:10px; color:var(--a-muted); margin-bottom:6px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; }
+    .demo-row { font-size:12px; color:var(--a-text); margin-top:4px; }
+    .code-chip { background:rgba(255,255,255,.06); padding:2px 6px; border-radius:4px; font-size:12px; }
+
+    /* ── ADMIN DASHBOARD ── */
+    .adm-pg { min-height:100vh; background:var(--a-bg); color:var(--a-text); }
+    .adm-topbar { background:var(--a-s1); border-bottom:1px solid var(--a-border);
+      padding:0 28px; display:flex; align-items:center; height:58px; gap:14px;
+      position:sticky; top:0; z-index:10; }
+    .topbar-logo { display:flex; align-items:center; gap:11px; flex:1; }
+    .topbar-title { font-family:var(--fd); font-size:17px; font-weight:700; color:var(--a-text); letter-spacing:.5px; }
+    .topbar-title span { color:var(--a-acc); }
+    .topbar-date { font-size:11px; color:var(--a-muted); }
+    .topbar-user { font-size:12px; font-weight:500; color:var(--a-text);
+      background:var(--a-s2); padding:5px 12px; border-radius:20px; border:1px solid var(--a-border); }
+    .logout-btn { font-size:12px; color:var(--a-muted); cursor:pointer; padding:5px 11px;
+      border-radius:6px; border:1px solid var(--a-border); background:none; transition:all .2s; }
+    .logout-btn:hover { color:var(--a-err); border-color:var(--a-err); }
+    .adm-body { max-width:1200px; margin:0 auto; padding:24px 28px; }
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+    .stat-card { background:var(--a-s1); border:1px solid var(--a-border); border-radius:13px;
+      padding:18px; position:relative; overflow:hidden; }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+    .sc-ora::before { background:var(--a-acc); }
+    .sc-grn::before { background:var(--a-ok); }
+    .sc-blu::before { background:var(--a-blue); }
+    .sc-wht::before { background:#6B7FA8; }
+    .stat-lbl { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--a-muted); margin-bottom:7px; }
+    .stat-val { font-family:var(--fd); font-size:40px; font-weight:700; line-height:1; margin-bottom:4px; }
+    .sc-ora .stat-val { color:var(--a-acc); }
+    .sc-grn .stat-val { color:var(--a-ok); }
+    .sc-blu .stat-val { color:var(--a-blue); }
+    .sc-wht .stat-val { color:#8090AA; }
+    .stat-sub { font-size:11px; color:var(--a-muted); }
+    .adm-grid { display:grid; grid-template-columns:1fr 360px; gap:18px; }
+    .panel { background:var(--a-s1); border:1px solid var(--a-border); border-radius:14px; overflow:hidden; }
+    .panel-hdr { padding:14px 18px; border-bottom:1px solid var(--a-border);
+      display:flex; align-items:center; justify-content:space-between; }
+    .panel-ttl { font-size:13px; font-weight:700; color:var(--a-text); }
+    .panel-acts { display:flex; gap:8px; align-items:center; }
+    .panel-body { padding:18px; }
+    .filter-tabs { display:flex; gap:4px; margin-bottom:16px; }
+    .ftab { padding:5px 13px; border-radius:20px; font-size:12px; font-weight:600;
+      cursor:pointer; border:1.5px solid var(--a-border); background:none;
+      color:var(--a-muted); transition:all .2s; }
+    .ftab.on { background:var(--a-acc); border-color:var(--a-acc); color:#fff; }
+    .ftab:hover:not(.on) { border-color:var(--a-acc); color:var(--a-acc); }
+    .g-tbl { width:100%; border-collapse:collapse; }
+    .g-tbl th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      color:var(--a-muted); padding:7px 10px; text-align:left; border-bottom:1px solid var(--a-border); }
+    .g-tbl td { padding:10px; font-size:13px; color:var(--a-text);
+      border-bottom:1px solid rgba(30,45,69,.6); vertical-align:middle; }
+    .g-tbl tr:last-child td { border-bottom:none; }
+    .g-tbl tr:hover td { background:rgba(255,255,255,.015); }
+    .gname { font-weight:600; font-size:13px; }
+    .gcomp { font-size:11px; color:var(--a-muted); margin-top:2px; }
+    .sbadge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px;
+      border-radius:20px; font-size:11px; font-weight:600; }
+    .sbadge.aktif { background:rgba(16,185,129,.12); color:var(--a-ok); border:1px solid rgba(16,185,129,.25); }
+    .sbadge.selesai { background:rgba(148,163,184,.08); color:var(--a-muted); border:1px solid var(--a-border); }
+    .sdot { width:6px; height:6px; border-radius:50%; }
+    .sbadge.aktif .sdot { background:var(--a-ok); animation:pulse 2s infinite; }
+    .sbadge.selesai .sdot { background:var(--a-muted); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .abtn { padding:4px 9px; border-radius:5px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid; transition:all .15s; }
+    .abtn-ok { border-color:var(--a-ok); color:var(--a-ok); background:rgba(16,185,129,.1); }
+    .abtn-ok:hover { background:rgba(16,185,129,.2); }
+    .abtn-dis { border-color:var(--a-border); color:var(--a-muted); background:transparent; cursor:default; }
+    .srch { padding:7px 11px; background:var(--a-s2); border:1.5px solid var(--a-border);
+      border-radius:8px; font-family:var(--ff); font-size:12px; color:var(--a-text);
+      outline:none; transition:border-color .2s; width:190px; }
+    .srch:focus { border-color:var(--a-acc); }
+    .srch::placeholder { color:var(--a-muted); opacity:.5; }
+    .smBtn { padding:7px 13px; border-radius:7px; font-family:var(--ff); font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid; transition:all .2s; }
+    .smBtn-grn { background:transparent; border-color:var(--a-ok); color:var(--a-ok); }
+    .smBtn-grn:hover { background:rgba(16,185,129,.1); }
+    .smBtn-out { background:transparent; border-color:var(--a-border); color:var(--a-muted); }
+    .smBtn-out:hover { border-color:var(--a-blue); color:var(--a-blue); }
+    .chart-wrap { position:relative; height:170px; }
+    .rekap-list { display:flex; flex-direction:column; gap:8px; }
+    .rekap-item { display:flex; align-items:center; justify-content:space-between;
+      padding:9px 13px; background:var(--a-s2); border-radius:9px; border:1px solid var(--a-border); }
+    .rekap-lbl { font-size:12px; font-weight:600; color:var(--a-text); }
+    .rekap-num { font-family:var(--fd); font-size:22px; font-weight:700; color:var(--a-acc); }
+    .empty-st { text-align:center; padding:36px 20px; color:var(--a-muted); }
+    .empty-ico { font-size:36px; margin-bottom:10px; }
+    .empty-txt { font-size:13px; }
+    .right-col { display:flex; flex-direction:column; gap:16px; }
+
+    /* ── SPINNER ── */
+    .spin { width:18px; height:18px; border:2px solid rgba(255,255,255,.3);
+      border-top-color:#fff; border-radius:50%; animation:rot .6s linear infinite; }
+    @keyframes rot { to { transform:rotate(360deg); } }
+
+    /* ── FADE IN ── */
+    .fade { animation:fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px) {
+      .f-grid { grid-template-columns:1fr; }
+      .stats-row { grid-template-columns:1fr 1fr; }
+      .adm-grid { grid-template-columns:1fr; }
+      .adm-body { padding:16px; }
+      .form-card { padding:22px; }
+      .badge-info { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ────────── CONSTANTS ────────── */
+const ADMIN_USERS = [
+  { username:'admin',    password:'ihi@2024',      nama:'Administrator' },
+  { username:'security', password:'security123',   nama:'Petugas Keamanan' },
+];
+const KEPERLUAN = ['Pertemuan / Meeting','Wawancara Kerja','Kunjungan Bisnis','Kunjungan Teknis','Pengiriman Barang / Dokumen','Kunjungan Pribadi','Lainnya'];
+const DEPARTEMEN = ['Direksi / Manajemen','Human Resources','Engineering','Operasional','Finance & Accounting','Procurement','IT','Quality Assurance','Umum / GA','Lainnya'];
+
+/* ────────── UTILS ────────── */
+function genId() {
+  const d = new Date();
+  return `IHI-${String(d.getFullYear()).slice(2)}${p2(d.getMonth()+1)}${p2(d.getDate())}-${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`;
+}
+function p2(n){ return String(n).padStart(2,'0'); }
+function fmtDate(s){ return new Date(s).toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+function fmtTime(s){ return new Date(s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
+function fmtShort(s){ return new Date(s).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function sameDay(a,b){ return new Date(a).toDateString()===new Date(b).toDateString(); }
+function thisWeek(s){ const d=new Date(s),n=new Date(),w=new Date(n-7*864e5); return d>=w&&d<=n; }
+function thisMonth(s){ const d=new Date(s),n=new Date(); return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear(); }
+
+function makeSamples() {
+  const cos=['PT Semen Indonesia','Bank BNI','Pertamina Persero','PLN (Persero)','CV Mitra Teknik','PT Jasa Marga','PT KAI','Kementerian ESDM'];
+  const nms=['Budi Santoso','Siti Rahayu','Ahmad Fauzi','Dewi Kusuma','Rizky Pratama','Nur Hidayati','Hendra Wijaya','Rina Puspita'];
+  const arr=[];
+  for(let i=0;i<22;i++){
+    const da=Math.floor(Math.random()*28);
+    const d=new Date(); d.setDate(d.getDate()-da); d.setHours(7+Math.floor(Math.random()*9),Math.floor(Math.random()*60));
+    const ci=new Date(d);
+    const co=(!da||Math.random()>.35) ? new Date(ci.getTime()+(30+Math.floor(Math.random()*150))*60000) : null;
+    arr.push({ id:genId(), nama:nms[i%nms.length], instansi:cos[i%cos.length],
+      noHP:`08${Math.floor(Math.random()*9+1)}${Math.floor(1e8+Math.random()*9e8)}`,
+      email:`tamu${i+1}@contoh.com`, keperluan:KEPERLUAN[Math.floor(Math.random()*4)],
+      tujuanMenemui:`${['Pak','Bu'][i%2]} ${nms[(i+3)%nms.length].split(' ')[0]}`,
+      departemenTujuan:DEPARTEMEN[Math.floor(Math.random()*7)],
+      waktuKunjungan:ci.toISOString(), checkIn:ci.toISOString(),
+      checkOut:co?co.toISOString():null, status:co?'selesai':'aktif', catatan:'' });
+  }
+  return arr.sort((a,b)=>new Date(b.checkIn)-new Date(a.checkIn));
+}
+
+/* ────────── APP ────────── */
+function App(){
+  const [page,setPage]=useState('guest');
+  const [guests,setGuests]=useState(()=>{ try{ const s=localStorage.getItem('ihi_gtb'); return s?JSON.parse(s):makeSamples(); }catch{ return makeSamples(); } });
+  const [curGuest,setCurGuest]=useState(null);
+  const [adminUser,setAdminUser]=useState(null);
+
+  useEffect(()=>{ try{localStorage.setItem('ihi_gtb',JSON.stringify(guests));}catch(e){} },[guests]);
+  useEffect(()=>{ document.body.className=(page==='admin-login'||page==='admin-dashboard')?'adm':''; },[page]);
+
+  const doCheckIn=form=>{
+    const g={...form, id:genId(), checkIn:new Date().toISOString(), checkOut:null, status:'aktif'};
+    setGuests(p=>[g,...p]); setCurGuest(g); setPage('success');
+  };
+  const doCheckOut=id=>setGuests(p=>p.map(g=>g.id===id?{...g,status:'selesai',checkOut:new Date().toISOString()}:g));
+  const doLogin=u=>{ setAdminUser(u); setPage('admin-dashboard'); };
+  const doLogout=()=>{ setAdminUser(null); setPage('guest'); };
+
+  if(page==='guest')           return <GuestPage onCheckIn={doCheckIn} onAdmin={()=>setPage('admin-login')} />;
+  if(page==='success')         return <SuccessPage guest={curGuest} onBack={()=>setPage('guest')} />;
+  if(page==='admin-login')     return <AdminLogin onLogin={doLogin} onBack={()=>setPage('guest')} />;
+  if(page==='admin-dashboard') return <AdminDashboard guests={guests} adminUser={adminUser} onCheckOut={doCheckOut} onLogout={doLogout} />;
+  return null;
+}
+
+/* ────────── GUEST PAGE ────────── */
+function GuestPage({onCheckIn,onAdmin}){
+  const now=new Date();
+  const ds=now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const [form,setForm]=useState({
+    nama:'',instansi:'',noHP:'',email:'',
+    keperluan:'',tujuanMenemui:'',departemenTujuan:'',
+    waktuKunjungan:now.toISOString().slice(0,16),catatan:''
+  });
+  const [errs,setErrs]=useState({});
+  const [loading,setLoading]=useState(false);
+
+  const set=(k,v)=>{ setForm(f=>({...f,[k]:v})); setErrs(e=>({...e,[k]:null})); };
+
+  const validate=()=>{
+    const e={};
+    if(!form.nama.trim())            e.nama='Nama wajib diisi';
+    if(!form.instansi.trim())        e.instansi='Instansi wajib diisi';
+    if(!form.noHP.trim())            e.noHP='No. HP wajib diisi';
+    if(!form.email.trim())           e.email='Email wajib diisi';
+    else if(!/\S+@\S+\.\S+/.test(form.email)) e.email='Format email tidak valid';
+    if(!form.keperluan)              e.keperluan='Keperluan wajib dipilih';
+    if(!form.tujuanMenemui.trim())   e.tujuanMenemui='Nama yang dituju wajib diisi';
+    if(!form.departemenTujuan)       e.departemenTujuan='Departemen wajib dipilih';
+    return e;
+  };
+
+  const submit=async e=>{ e.preventDefault(); const ev=validate(); if(Object.keys(ev).length){setErrs(ev);return;} setLoading(true); await new Promise(r=>setTimeout(r,700)); onCheckIn(form); setLoading(false); };
+
+  const F=({k,label,req,children})=>(
+    <div className="f-grp">
+      <label className="f-lbl">{label}{req&&<span className="req">*</span>}</label>
+      {children}
+      {errs[k]&&<span className="f-err">{errs[k]}</span>}
+    </div>
+  );
+
+  return (
+    <div className="fade">
+      <header className="g-hdr">
+        <div className="g-hdr-in">
+          <div className="logo-box">IHI</div>
+          <div><div className="logo-txt-main">PT IHI Power Service Indonesia</div><div className="logo-txt-sub">Buku Tamu Digital</div></div>
+          <span className="hdr-adm-link" onClick={onAdmin}>Admin ›</span>
+        </div>
+      </header>
+      <div className="g-hero">
+        <div className="g-hero-in">
+          <div className="hero-date">{ds}</div>
+          <div className="hero-title">Selamat Datang</div>
+          <div className="hero-bar"></div>
+          <div className="hero-sub">Silakan isi data kunjungan Anda dengan lengkap dan benar.</div>
+        </div>
+      </div>
+      <div className="form-wrap">
+        <form onSubmit={submit}>
+          <div className="form-card">
+            <div className="sec-ttl">Data Tamu</div>
+            <div className="f-grid">
+              <F k="nama" label="Nama Lengkap" req><input className={`f-inp${errs.nama?' err':''}`} placeholder="Masukkan nama lengkap" value={form.nama} onChange={e=>set('nama',e.target.value)}/></F>
+              <F k="instansi" label="Instansi / Perusahaan" req><input className={`f-inp${errs.instansi?' err':''}`} placeholder="Nama instansi atau perusahaan" value={form.instansi} onChange={e=>set('instansi',e.target.value)}/></F>
+              <F k="noHP" label="No. HP / WhatsApp" req><input className={`f-inp${errs.noHP?' err':''}`} placeholder="08xxxxxxxxxx" value={form.noHP} onChange={e=>set('noHP',e.target.value)}/></F>
+              <F k="email" label="Alamat Email" req><input className={`f-inp${errs.email?' err':''}`} type="email" placeholder="contoh@email.com" value={form.email} onChange={e=>set('email',e.target.value)}/></F>
+            </div>
+            <div className="f-divider"></div>
+            <div className="sec-ttl">Detail Kunjungan</div>
+            <div className="f-grid">
+              <F k="keperluan" label="Keperluan Kunjungan" req>
+                <select className={`f-inp${errs.keperluan?' err':''}`} value={form.keperluan} onChange={e=>set('keperluan',e.target.value)}>
+                  <option value="">-- Pilih Keperluan --</option>
+                  {KEPERLUAN.map(o=><option key={o}>{o}</option>)}
+                </select>
+              </F>
+              <F k="tujuanMenemui" label="Tujuan Menemui" req><input className={`f-inp${errs.tujuanMenemui?' err':''}`} placeholder="Nama orang yang ingin ditemui" value={form.tujuanMenemui} onChange={e=>set('tujuanMenemui',e.target.value)}/></F>
+              <F k="departemenTujuan" label="Departemen / Divisi" req>
+                <select className={`f-inp${errs.departemenTujuan?' err':''}`} value={form.departemenTujuan} onChange={e=>set('departemenTujuan',e.target.value)}>
+                  <option value="">-- Pilih Departemen --</option>
+                  {DEPARTEMEN.map(o=><option key={o}>{o}</option>)}
+                </select>
+              </F>
+              <F k="waktuKunjungan" label="Waktu Kunjungan">
+                <input className="f-inp" type="datetime-local" value={form.waktuKunjungan} onChange={e=>set('waktuKunjungan',e.target.value)}/>
+              </F>
+            </div>
+            <div className="f-grid-1">
+              <F k="catatan" label="Catatan Tambahan (Opsional)">
+                <textarea className="f-inp" placeholder="Informasi tambahan jika diperlukan..." value={form.catatan} onChange={e=>set('catatan',e.target.value)}/>
+              </F>
+            </div>
+            <div className="f-footer">
+              <span className="f-note"><span style={{color:'var(--g-acc)'}}>*</span> Wajib diisi</span>
+              <button type="submit" className="btn btn-pri" disabled={loading} style={{minWidth:180}}>
+                {loading?<><div className="spin"></div>&nbsp;Memproses...</>:'Daftarkan Kunjungan →'}
+              </button>
+            </div>
+          </div>
+        </form>
+        <p style={{textAlign:'center',fontSize:'11px',color:'var(--g-muted)',marginTop:'18px'}}>
+          Data Anda dijaga kerahasiaannya sesuai kebijakan privasi perusahaan.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ────────── SUCCESS PAGE ────────── */
+function SuccessPage({guest,onBack}){
+  const qrRef=useRef(null);
+
+  useEffect(()=>{
+    if(!qrRef.current||!guest) return;
+    qrRef.current.innerHTML='';
+    try{
+      new QRCode(qrRef.current,{
+        text:JSON.stringify({id:guest.id,nama:guest.nama,instansi:guest.instansi,checkIn:guest.checkIn}),
+        width:180,height:180,colorDark:'#0E1F40',colorLight:'#FFFFFF',
+        correctLevel:QRCode.CorrectLevel.H
+      });
+    }catch(e){}
+  },[guest]);
+
+  const downloadPDF=()=>{
+    if(!guest) return;
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a5'});
+    const W=148;
+    // Header bg
+    doc.setFillColor(14,31,64); doc.rect(0,0,W,32,'F');
+    // Accent bar
+    doc.setFillColor(232,93,38); doc.rect(0,32,W,2,'F');
+    // Header text
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(255,255,255);
+    doc.text('PT IHI POWER SERVICE INDONESIA',W/2,14,{align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(180,200,220);
+    doc.text('TANDA BUKTI KUNJUNGAN',W/2,22,{align:'center'});
+    doc.text('Dokumen ini diterbitkan secara digital dan sah.',W/2,28,{align:'center'});
+    // Visitor ID
+    doc.setFillColor(232,93,38); doc.roundedRect(10,40,W-20,18,3,3,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(255,255,255);
+    doc.text(guest.id,W/2,51,{align:'center'});
+    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(255,220,200);
+    doc.text('NOMOR KUNJUNGAN',W/2,57,{align:'center'});
+    // Fields
+    const fields=[
+      ['Nama Lengkap',guest.nama],['Instansi / Perusahaan',guest.instansi],
+      ['No. HP',guest.noHP],['Email',guest.email],['Keperluan',guest.keperluan],
+      ['Tujuan Menemui',guest.tujuanMenemui],['Departemen',guest.departemenTujuan],
+      ['Waktu Check-In',`${fmtDate(guest.checkIn)}  |  ${fmtTime(guest.checkIn)}`]
+    ];
+    let y=68;
+    fields.forEach(([lbl,val])=>{
+      doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(100,130,170);
+      doc.text(lbl.toUpperCase(),12,y);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(20,40,70);
+      doc.text(String(val||'-'),12,y+5.5);
+      doc.setDrawColor(225,232,242); doc.line(12,y+8.5,W-12,y+8.5);
+      y+=14;
+    });
+    // Footer
+    doc.setFillColor(245,248,252); doc.rect(0,190,W,20,'F');
+    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(130,150,180);
+    doc.text(`Diterbitkan: ${new Date().toLocaleString('id-ID')}`,W/2,200,{align:'center'});
+    doc.text('Simpan dokumen ini sebagai bukti kunjungan Anda.',W/2,206,{align:'center'});
+    doc.save(`Bukti-Kunjungan-${guest.id}.pdf`);
+  };
+
+  if(!guest) return null;
+  return (
+    <div className="fade">
+      <header className="g-hdr">
+        <div className="g-hdr-in">
+          <div className="logo-box">IHI</div>
+          <div><div className="logo-txt-main">PT IHI Power Service Indonesia</div><div className="logo-txt-sub">Buku Tamu Digital</div></div>
+        </div>
+      </header>
+      <div className="suc-wrap">
+        <div className="suc-icon">✓</div>
+        <div className="suc-title">Pendaftaran Berhasil!</div>
+        <div className="suc-sub">Selamat datang, {guest.nama.split(' ')[0]}. Tunjukkan QR Code ini kepada petugas.</div>
+        <div className="badge-card">
+          <div className="badge-id">{guest.id}</div>
+          <div className="badge-lbl">Nomor Kunjungan</div>
+          <div id="qr-wrap"><div ref={qrRef}></div></div>
+          <div className="badge-info">
+            <div><div className="b-fld-lbl">Nama</div><div className="b-fld-val">{guest.nama}</div></div>
+            <div><div className="b-fld-lbl">Instansi</div><div className="b-fld-val">{guest.instansi}</div></div>
+            <div><div className="b-fld-lbl">Keperluan</div><div className="b-fld-val">{guest.keperluan}</div></div>
+            <div><div className="b-fld-lbl">Menemui</div><div className="b-fld-val">{guest.tujuanMenemui} — {guest.departemenTujuan}</div></div>
+            <div style={{gridColumn:'1/-1'}}><div className="b-fld-lbl">Waktu Check-In</div><div className="b-fld-val">{fmtDate(guest.checkIn)} • {fmtTime(guest.checkIn)}</div></div>
+          </div>
+        </div>
+        <div className="suc-btns">
+          <button className="btn btn-pri" onClick={downloadPDF}>↓ Unduh Bukti Kunjungan (PDF)</button>
+          <button className="btn btn-sec" onClick={onBack}>← Kunjungan Baru</button>
+        </div>
+        <p style={{marginTop:20,fontSize:'12px',color:'var(--g-muted)'}}>
+          Bukti kunjungan juga akan dikirim ke <strong>{guest.email}</strong>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ────────── ADMIN LOGIN ────────── */
+function AdminLogin({onLogin,onBack}){
+  const [form,setForm]=useState({username:'',password:''});
+  const [err,setErr]=useState('');
+  const [loading,setLoading]=useState(false);
+  const sub=async e=>{
+    e.preventDefault(); setErr(''); setLoading(true);
+    await new Promise(r=>setTimeout(r,600));
+    const u=ADMIN_USERS.find(u=>u.username===form.username&&u.password===form.password);
+    if(u){ onLogin(u); } else { setErr('Username atau password salah. Coba lagi.'); setLoading(false); }
+  };
+  return (
+    <div className="adm-login-pg fade">
+      <div className="adm-login-hdr">
+        <div className="adm-logo-box">IHI</div>
+        <span style={{fontFamily:'var(--fd)',fontSize:'15px',fontWeight:700,color:'var(--a-text)',letterSpacing:'.5px'}}>Admin Portal</span>
+        <span style={{marginLeft:'auto',fontSize:'12px',color:'var(--a-muted)',cursor:'pointer'}} onClick={onBack}>← Kembali ke Halaman Tamu</span>
+      </div>
+      <div className="adm-login-body">
+        <div className="adm-login-card">
+          <div className="adm-login-title">Masuk ke Dashboard</div>
+          <div className="adm-login-sub">PT IHI Power Service Indonesia — Sistem Buku Tamu</div>
+          {err&&<div className="adm-err">{err}</div>}
+          <form onSubmit={sub}>
+            <div className="adm-fgrp">
+              <label className="adm-lbl">Username</label>
+              <input className="adm-inp" value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="Masukkan username" autoComplete="username"/>
+            </div>
+            <div className="adm-fgrp">
+              <label className="adm-lbl">Password</label>
+              <input className="adm-inp" type="password" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} placeholder="••••••••" autoComplete="current-password"/>
+            </div>
+            <button type="submit" className="btn-adm" style={{marginTop:8}} disabled={loading}>
+              {loading?<><div className="spin" style={{margin:'0 auto'}}></div></>:'Masuk ke Dashboard →'}
+            </button>
+          </form>
+          <div className="adm-div"><span>atau</span></div>
+          <button className="g-btn" onClick={()=>alert('Google Sign-In memerlukan konfigurasi Google OAuth terpisah.\nLihat file README.md yang disertakan untuk panduan langkah demi langkah.')}>
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Lanjutkan dengan Google
+          </button>
+          <div className="demo-box">
+            <div className="demo-ttl">Akun Demo</div>
+            <div className="demo-row">Username: <span className="code-chip">admin</span></div>
+            <div className="demo-row">Password: <span className="code-chip">ihi@2024</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ────────── ADMIN DASHBOARD ────────── */
+function AdminDashboard({guests,adminUser,onCheckOut,onLogout}){
+  const [filter,setFilter]=useState('today');
+  const [search,setSearch]=useState('');
+  const chartRef=useRef(null);
+  const chartInst=useRef(null);
+  const now=new Date();
+  const ds=now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  const filtered=guests.filter(g=>{
+    const ms=!search||[g.nama,g.instansi,g.id].some(v=>v.toLowerCase().includes(search.toLowerCase()));
+    const mf=filter==='all'?true:filter==='today'?sameDay(g.checkIn,now):filter==='week'?thisWeek(g.checkIn):thisMonth(g.checkIn);
+    return ms&&mf;
+  });
+
+  const stats={ total:filtered.length, aktif:filtered.filter(g=>g.status==='aktif').length,
+    selesai:filtered.filter(g=>g.status==='selesai').length,
+    todayCount:guests.filter(g=>sameDay(g.checkIn,now)).length };
+
+  const getDailyData=()=>{
+    const labels=[],data=[];
+    for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i);
+      labels.push(d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'}));
+      data.push(guests.filter(g=>sameDay(g.checkIn,d)).length); }
+    return {labels,data};
+  };
+
+  const rekap7=()=>{
+    const {labels,data}=getDailyData();
+    return labels.map((l,i)=>({label:l,count:data[i]})).reverse();
+  };
+
+  useEffect(()=>{
+    if(!chartRef.current) return;
+    if(chartInst.current) chartInst.current.destroy();
+    const {labels,data}=getDailyData();
+    chartInst.current=new Chart(chartRef.current,{
+      type:'bar', data:{labels, datasets:[{data, backgroundColor:'rgba(249,115,22,.75)', borderColor:'rgb(249,115,22)', borderWidth:0, borderRadius:4, hoverBackgroundColor:'rgba(249,115,22,.95)'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw} tamu`}}},
+        scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6B7FA8',font:{size:10}}},
+                y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6B7FA8',font:{size:10},stepSize:1},beginAtZero:true}}}
+    });
+  },[guests]);
+
+  const exportCSV=()=>{
+    const hdr=['ID','Nama','Instansi','No HP','Email','Keperluan','Tujuan Menemui','Departemen','Check-In','Check-Out','Status'];
+    const rows=filtered.map(g=>[g.id,g.nama,g.instansi,g.noHP,g.email,g.keperluan,g.tujuanMenemui,g.departemenTujuan,
+      g.checkIn?new Date(g.checkIn).toLocaleString('id-ID'):'-', g.checkOut?new Date(g.checkOut).toLocaleString('id-ID'):'-',g.status]);
+    const csv=[hdr,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+    a.download=`Rekap-Tamu-IHI-${today()}.csv`; a.click();
+  };
+
+  const exportPDF=()=>{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    const W=297,col=[14,48,95,135,168,200,240,270];
+    doc.setFillColor(14,31,64); doc.rect(0,0,W,22,'F');
+    doc.setFillColor(232,93,38); doc.rect(0,22,W,2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(255,255,255);
+    doc.text('PT IHI POWER SERVICE INDONESIA — REKAP KUNJUNGAN TAMU',14,14);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(180,200,220);
+    doc.text(`Periode: ${filter==='today'?'Hari Ini':filter==='week'?'7 Hari Terakhir':filter==='month'?'Bulan Ini':'Semua'}   |   Total: ${filtered.length} kunjungan   |   Dicetak: ${new Date().toLocaleString('id-ID')}`,200,14,{align:'right'});
+    const hdrs=['No','ID Kunjungan','Nama','Instansi','Keperluan','Menemui','Departemen','Status','Check-In','Check-Out'];
+    let y=32;
+    doc.setFillColor(235,240,248); doc.rect(0,y,W,8,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(60,80,120);
+    hdrs.forEach((h,i)=>{ const x=i===0?14:col[i-1]; doc.text(h,x,y+5.5); });
+    y+=10;
+    filtered.slice(0,40).forEach((g,i)=>{
+      if(i%2===0){ doc.setFillColor(250,252,255); doc.rect(0,y-2,W,9,'F'); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(30,50,80);
+      const vals=[String(i+1),g.id,g.nama.slice(0,22),g.instansi.slice(0,20),
+        g.keperluan.slice(0,18),g.tujuanMenemui.slice(0,14),g.departemenTujuan.slice(0,16),g.status,
+        fmtTime(g.checkIn),g.checkOut?fmtTime(g.checkOut):'-'];
+      vals.forEach((v,j)=>{ const x=j===0?14:col[j-1]; doc.text(v,x,y+5); });
+      y+=9;
+    });
+    doc.setFillColor(245,248,252); doc.rect(0,200,W,10,'F');
+    doc.setFontSize(7); doc.setTextColor(130,150,180);
+    doc.text('Dokumen ini diterbitkan secara digital oleh Sistem Buku Tamu PT IHI Power Service Indonesia.',14,207);
+    doc.save(`Laporan-Tamu-IHI-${today()}.pdf`);
+  };
+
+  return (
+    <div className="adm-pg fade">
+      <nav className="adm-topbar">
+        <div className="topbar-logo">
+          <div className="adm-logo-box">IHI</div>
+          <span className="topbar-title">Buku Tamu <span>Digital</span></span>
+        </div>
+        <span className="topbar-date">{ds}</span>
+        <span className="topbar-user">{adminUser?.nama}</span>
+        <button className="logout-btn" onClick={onLogout}>Keluar</button>
+      </nav>
+      <div className="adm-body">
+        <div className="stats-row">
+          <div className="stat-card sc-ora">
+            <div className="stat-lbl">Total Kunjungan</div>
+            <div className="stat-val">{stats.total}</div>
+            <div className="stat-sub">{filter==='today'?'Hari ini':filter==='week'?'7 hari terakhir':filter==='month'?'Bulan ini':'Semua waktu'}</div>
+          </div>
+          <div className="stat-card sc-grn">
+            <div className="stat-lbl">Sedang Aktif</div>
+            <div className="stat-val">{stats.aktif}</div>
+            <div className="stat-sub">Tamu masih di lokasi</div>
+          </div>
+          <div className="stat-card sc-blu">
+            <div className="stat-lbl">Selesai</div>
+            <div className="stat-val">{stats.selesai}</div>
+            <div className="stat-sub">Check-out tercatat</div>
+          </div>
+          <div className="stat-card sc-wht">
+            <div className="stat-lbl">Tamu Hari Ini</div>
+            <div className="stat-val">{stats.todayCount}</div>
+            <div className="stat-sub">{now.toLocaleDateString('id-ID',{day:'numeric',month:'long'})}</div>
+          </div>
+        </div>
+        <div className="adm-grid">
+          {/* Left: Table */}
+          <div className="panel">
+            <div className="panel-hdr">
+              <span className="panel-ttl">Daftar Kunjungan</span>
+              <div className="panel-acts">
+                <input className="srch" placeholder="Cari nama, instansi, ID..." value={search} onChange={e=>setSearch(e.target.value)}/>
+                <button className="smBtn smBtn-grn" onClick={exportCSV}>↓ CSV</button>
+                <button className="smBtn smBtn-out" onClick={exportPDF}>↓ PDF</button>
+              </div>
+            </div>
+            <div style={{padding:'12px 16px 0'}}>
+              <div className="filter-tabs">
+                {[['today','Hari Ini'],['week','7 Hari'],['month','Bulan Ini'],['all','Semua']].map(([v,l])=>(
+                  <button key={v} className={`ftab${filter===v?' on':''}`} onClick={()=>setFilter(v)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{overflowX:'auto',maxHeight:'440px',overflowY:'auto'}}>
+              {filtered.length===0?(
+                <div className="empty-st"><div className="empty-ico">📋</div><div className="empty-txt">Tidak ada data kunjungan untuk periode ini</div></div>
+              ):(
+                <table className="g-tbl">
+                  <thead>
+                    <tr><th>ID / Waktu</th><th>Tamu</th><th>Keperluan</th><th>Departemen</th><th>Status</th><th>Aksi</th></tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(g=>(
+                      <tr key={g.id}>
+                        <td>
+                          <div style={{fontFamily:'monospace',fontSize:'11px',color:'var(--a-acc)',fontWeight:700}}>{g.id}</div>
+                          <div style={{fontSize:'10px',color:'var(--a-muted)',marginTop:2}}>{fmtTime(g.checkIn)} · {fmtShort(g.checkIn)}</div>
+                        </td>
+                        <td><div className="gname">{g.nama}</div><div className="gcomp">{g.instansi}</div></td>
+                        <td>
+                          <div style={{fontSize:'12px'}}>{g.keperluan}</div>
+                          <div style={{fontSize:'10px',color:'var(--a-muted)',marginTop:2}}>→ {g.tujuanMenemui}</div>
+                        </td>
+                        <td><div style={{fontSize:'11px',color:'var(--a-muted)'}}>{g.departemenTujuan}</div></td>
+                        <td>
+                          <span className={`sbadge ${g.status}`}>
+                            <span className="sdot"></span>
+                            {g.status==='aktif'?'Aktif':'Selesai'}
+                          </span>
+                        </td>
+                        <td>
+                          {g.status==='aktif'
+                            ?<button className="abtn abtn-ok" onClick={()=>onCheckOut(g.id)}>Check-Out</button>
+                            :<button className="abtn abtn-dis" disabled>Selesai</button>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+          {/* Right column */}
+          <div className="right-col">
+            <div className="panel">
+              <div className="panel-hdr"><span className="panel-ttl">Kunjungan 7 Hari Terakhir</span></div>
+              <div className="panel-body"><div className="chart-wrap"><canvas ref={chartRef}></canvas></div></div>
+            </div>
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-ttl">Rekap Harian</span>
+                <button className="smBtn smBtn-out" onClick={exportCSV}>↓ Export</button>
+              </div>
+              <div className="panel-body">
+                <div className="rekap-list">
+                  {rekap7().map(({label,count})=>(
+                    <div key={label} className="rekap-item">
+                      <div className="rekap-lbl">{label}</div>
+                      <div className="rekap-num">{count}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ────────── RENDER ────────── */
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
